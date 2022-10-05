@@ -1,19 +1,14 @@
 import sys
-import time
 import pprint  # noqa
 import logging
 import argparse
 import json
 import threading
 
-import schedule
-from slack_sdk import WebClient
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
-import jinja2
 
-from at import AT
-from sms_pdu import PDU
+from forwarding_sms import SMSForwardingTask
 import util
 
 PROG = 'SMS Forwarding Bot'
@@ -41,92 +36,7 @@ handler.setFormatter(fmt)
 logger.addHandler(handler)
 logger.propagate = False  # 親ロガーに伝搬しない
 
-client = WebClient(token=BOT_TOKEN)
 app = App(token=BOT_TOKEN)
-
-
-def decode_pdu_message(msg: str) -> list:
-    # +CMGL: <index>,<stat>,[<alpha>],<length><CR><LF><pdu><CR><LF>
-
-    # http://www.gsm-modem.de/sms-pdu-mode.html
-    # https://www.soumu.go.jp/main_content/000739753.pdf
-
-    msg_list = msg.split('\n')
-
-    cmgl_flag = False
-    pi_list = []
-    for line in msg_list:
-        line = line.strip()
-
-        if len(line) == 0:  # 空行除外
-            continue
-
-        if 'OK' in line:  # 終了
-            break
-
-        if '+CMGL:' in line:
-            # cmgl_line = line.split(',')
-            # pdu_length = int(cmgl_line[3], 16)
-            cmgl_flag = True
-        elif cmgl_flag:
-            pdu = PDU(line)
-            pi_list.append(pdu)
-
-            cmgl_flag = False
-
-    return pi_list
-
-
-def create_sms_list_from_pdu(pdu_list: list) -> list:
-    sms_list = []
-
-    mms_list = list(filter(lambda x: x.pdu['tp_ud']['udh'] is not None, pdu_list))
-    not_mms_list = list(filter(lambda x: x.pdu['tp_ud']['udh'] is None, pdu_list))
-
-    # IED
-    #     Octet1 8bit連結SM整理番号(FIXME: 2Byteある？)
-    #     Octet2 最大SM番号
-    #     Octet3 シーケンス番号
-    linking_number_list = list(set(list(map(lambda x: x.pdu['tp_ud']['udh'][0]['ied'][0], mms_list))))
-
-    for linking_number in linking_number_list:
-        linking_list = list(filter(lambda x: x.pdu['tp_ud']['udh'][0]['ied'][0] == linking_number, mms_list))
-        sorted_list = sorted(linking_list, key=lambda x: x.pdu['tp_ud']['udh'][0]['ied'][-1])
-
-        message = ''
-        for s in sorted_list:
-            message += s.message
-        sms_list.append(dict(timestamp=s.timestamp, message=message, from_number=s.from_number))
-
-    for m in not_mms_list:
-        sms_list.append(dict(timestamp=m.timestamp, message=m.message, from_number=m.from_number))
-
-    return sms_list
-
-
-def send_sms_to_slack() -> None:
-    at = AT(port=PORT)
-    msg = at.get_sms_pdu(state=0)
-
-    pdu_list = decode_pdu_message(msg)
-    sms_list = create_sms_list_from_pdu(pdu_list)
-
-    # 除外する電話番号取得
-    exclusion_number_list = util.get_exclusion_list()
-
-    sms_template = '''<<<From {{from_number}} 
-{{timestamp}}
-{{message}}'''
-    template = jinja2.Template(sms_template)
-
-    for sms in sms_list:
-        if sms['from_number'] in exclusion_number_list:
-            continue
-        render_sms = template.render(from_number=sms['from_number'],
-                                     message=sms['message'],
-                                     timestamp=sms['timestamp'])
-        print(render_sms)
-        client.chat_postMessage(channel=f'{SLACK_CHANNEL}', text=render_sms)  # Slackに送信
 
 
 @app.command('/add_exclusion')
@@ -134,7 +44,10 @@ def add_exclusion_list_command(ack, say, command):
     number = command['text']
 
     util.add_exclusion_list(number)
-    ack(f'除外リストに「{number}」を追加しました')
+    message = f'除外リストに「{number}」を追加しました'
+    logger.debug(message)
+    say(message)
+    ack()
 
 
 @app.command('/delete_exclusion')
@@ -144,36 +57,34 @@ def delete_exclusion_list_command(ack, say, command):
     message = ''
     if util.delete_exclusion_list(number):
         message = f'除外リストから「{number}」を削除しました'
+        logger.debug(message)
+        say(message)
+        ack()
     else:
         message = f'除外リストに「{number}」は存在しません'
-    ack(message)
+        logger.debug(message)
+        ack(message)
 
 
 @app.command('/get_exclusion')
 def get_exclusion_list_command(ack, say, command):
     data = util.get_exclusion_list()
-    ack(str(data))
+    message = '除外リスト: ' + str(data)
+    logger.debug(message)
+    ack(message)
 
 
 @app.command('/get_bot_info')
 def get_bot_info(ack, say, command):
     raspi_info = util.get_raspberry_pi_info()
 
-    message = f'''{PROG}
-Ver {__version__}
+    message = f'''{PROG}  ver {__version__}
 Temp: {raspi_info['temp']}, Volt: {raspi_info['volt']}'''
+    logger.debug(message)
     ack(message)
 
 
-def transfer_sms():
-    schedule.every(INTERVAL_SECONDS).seconds.do(send_sms_to_slack)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-
-
-def actions_on_bot():
+def command_task():
     handler = SocketModeHandler(app, APP_TOKEN)
     handler.start()
 
@@ -183,13 +94,21 @@ def main():
     """
     logger.debug('Start...')
 
-    thread1 = threading.Thread(target=transfer_sms)
-    thread2 = threading.Thread(target=actions_on_bot)
-    thread1.start()
-    thread2.start()
+    try:
+        sms_fowarding_task = SMSForwardingTask()
 
-    thread1.join()
-    thread2.join()
+        thread1 = threading.Thread(target=sms_fowarding_task.start)
+        thread2 = threading.Thread(target=command_task)
+        thread1.start()
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
+
+    except Exception as e:  # noqa
+        logger.error(e)
+    finally:
+        pass
 
 
 if __name__ == "__main__":
