@@ -52,7 +52,17 @@ class PDU():
 
     @property
     def from_number(self,) -> str:
-        return self.convert_from_number_from_bytes_to_str(self.pdu['sender_number'])
+        number = ''
+        type_of_number = self.pdu['type_of_address']['type_of_number']
+        if type_of_number == 0b000:
+            number = self.convert_from_number_from_bytes_to_str(self.pdu['sender_number'])
+        elif type_of_number == 0b101:
+            number = self.convert_from_8bit_to_7bit(self.pdu['sender_number']).decode('gsm03.38')
+        else:
+            self._logger.warn('Unimplemented. "type of number": {}'.format(bin(type_of_number)))
+            number = self.convert_from_number_from_bytes_to_str(self.pdu['sender_number'])
+            # raise Exception('Unimplemented "type of number": {}'.format(bin(type_of_number)))
+        return number
 
     @property
     def message(self,) -> str:
@@ -104,6 +114,14 @@ class PDU():
         out['ud'] = d.read()
         return out
 
+    def parse_type_of_number(self, t: int):
+        # [9.1.2.5 Address fields] https://www.arib.or.jp/english/html/overview/doc/STD-T63v9_20/5_Appendix/Rel9/23/23040-930.pdf
+        out = dict(type_of_number=None, numbering_plan_id=None)
+
+        out['type_of_number'] = (t & 0b01110000) >> 4
+        out['numbering_plan_id'] = t & 0b00001111
+        return out
+
     def parse_pdu(self, line: str):
         # tp_pid
         # tp_dsc
@@ -125,7 +143,7 @@ class PDU():
 
         self.pdu['sms_type'] = d.read(1)[0]
         self.pdu['address_length'] = d.read(1)[0]
-        self.pdu['type_of_address'] = d.read(1)[0]
+        self.pdu['type_of_address'] = self.parse_type_of_number(d.read(1)[0])
         self.pdu['sender_number'] = d.read(int((self.pdu['address_length']+1)/2))  # NOTE: semioctet, With an "f" at the end.
 
         # TP: Transport Protocol

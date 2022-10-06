@@ -25,6 +25,10 @@ class AT():
                                     460800,
                                     timeout=timeout)
 
+        self.send_cmd('ATE0')
+        resp = self.read_response()
+        self._logger.debug(resp)
+
     def __del__(self,):
         """
         """
@@ -69,12 +73,6 @@ class AT():
         Returns:
             str: Text message (+CMGL: <index>,<stat>,<oa>,[<alpha>],[<scts>]<CR><LF><data><CR><LF>)
         """
-        self.send_cmd('ATE1')
-        resp = self.read_response()
-        self._logger.debug(resp)
-
-        time.sleep(0.5)
-
         self.send_cmd('AT+CMGF=1')  # 0: PDU Mode, 1: Text Mode
         resp = self.read_response()
         self._logger.debug(resp)
@@ -96,12 +94,6 @@ class AT():
         Returns:
             str: PDU message (+CMGL: <index>,<stat>,[<alpha>],<length><CR><LF><pdu><CR><LF>)
         """
-        self.send_cmd('ATE1')
-        resp = self.read_response()
-        self._logger.debug(resp)
-
-        time.sleep(0.5)
-
         self.send_cmd('AT+CMGF=0')  # 0: PDU Mode, 1: Text Mode
         resp = self.read_response()
         self._logger.debug(resp)
@@ -123,3 +115,12 @@ class AT():
         cmd = cmd + '\r'
         cmd = cmd.encode('utf-8')
         self.serial.write(cmd)
+
+
+if __name__ == "__main__":
+    """
+    """
+    port = '/dev/ttyUSB1'
+    at = AT(port=port)
+    msg = at.get_sms_pdu(4)
+    print(msg)
