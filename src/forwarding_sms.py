@@ -2,6 +2,7 @@ import sys
 import time
 import configparser
 import json
+import pprint  # noqa
 import logging
 
 import schedule
@@ -91,13 +92,13 @@ class SMSForwardingTask():
         not_mms_list = list(filter(lambda x: x.pdu['tp_ud']['udh'] is None, pdu_list))
 
         # IED
-        #     Octet1 8bit連結SM整理番号(FIXME: 2Byteある？)
-        #     Octet2 最大SM番号
-        #     Octet3 シーケンス番号
-        linking_number_list = list(set(list(map(lambda x: x.pdu['tp_ud']['udh'][0]['ied'][0], mms_list))))
+        #     Octet1-2 8bit連結SM整理番号
+        #     Octet2   最大SM番号
+        #     Octet3   シーケンス番号
+        linking_number_list = list(set(list(map(lambda x: x.pdu['tp_ud']['udh'][0]['ied'][0:2], mms_list))))
 
         for linking_number in linking_number_list:
-            linking_list = list(filter(lambda x: x.pdu['tp_ud']['udh'][0]['ied'][0] == linking_number, mms_list))
+            linking_list = list(filter(lambda x: x.pdu['tp_ud']['udh'][0]['ied'][0:2] == linking_number, mms_list))
             sorted_list = sorted(linking_list, key=lambda x: x.pdu['tp_ud']['udh'][0]['ied'][-1])
 
             message = ''
@@ -137,7 +138,9 @@ class SMSForwardingTask():
                                          message=sms['message'],
                                          timestamp=sms['timestamp'])
             self._logger.debug(render_sms)
-            self.client.chat_postMessage(channel=self.slack_channel, text=render_sms)  # Slackに送信
+
+            # Slackに送信
+            self.client.chat_postMessage(channel=self.slack_channel, text=render_sms)
 
     def start(self,):
         schedule.every(self.interval_seconds).seconds.do(self.send_sms_to_slack)
@@ -145,3 +148,11 @@ class SMSForwardingTask():
         while True:
             schedule.run_pending()
             time.sleep(1)
+
+
+if __name__ == "__main__":
+    """
+    """
+    sms_forwarding_task = SMSForwardingTask()
+    sms_forwarding_task.enable_logger(logging.DEBUG)
+    sms_forwarding_task.send_sms_to_slack()

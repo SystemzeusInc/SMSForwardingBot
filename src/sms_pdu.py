@@ -80,7 +80,7 @@ class PDU():
         return False if self.pdu['sms_type'] & 0b00000100 else True  # More Message to Send # 後続データの有無
 
     def parse_user_data_header(self, udh: bytearray) -> list:
-        # [9.2.3.24.1 Concatenated Short Messages] https://www.arib.or.jp/english/html/overview/doc/STD-T63v9_20/5_Appendix/Rel9/23/23040-930.pdf
+        # [9.2.3.24.8 Concatenated Short Messages, 16-bit reference number ] https://www.arib.or.jp/english/html/overview/doc/STD-T63v9_20/5_Appendix/Rel9/23/23040-930.pdf
         # https://www.au.com/content/dam/au-com/okinawa_cellular/common/pdf/corporate/disclosure/setsuzoku_yakkan/gijutsu.pdf
         out = []
         tmp = dict(iei=None, iedl=None, ied=None)
@@ -94,9 +94,9 @@ class PDU():
             tmp['iedl'] = d.read(1)[0]  # Information Element Data Length
             tmp['ied'] = d.read(tmp['iedl'])  # Information Element Data
             # IED
-            #     Octet1 8bit連結SM整理番号(FIXME: 2Byteある？)
-            #     Octet2 最大SM番号
-            #     Octet3 シーケンス番号
+            #     Octet1-2 8bit連結SM整理番号
+            #     Octet3   最大SM番号
+            #     Octet4   シーケンス番号
             out.append(tmp)
         return out
 

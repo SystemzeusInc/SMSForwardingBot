@@ -14,9 +14,6 @@ import util
 PROG = 'SMS Forwarding Bot'
 __version__ = '0.1.0'
 
-SLACK_CHANNEL = '#test_sms'  # 送信先のSlackのチャンネル
-INTERVAL_SECONDS = 60  # ポーリングする間隔[s]
-PORT = '/dev/ttyUSB1'  # モデムのポート
 
 # トークン
 with open('../token.json', 'r') as f:
@@ -95,7 +92,7 @@ def main():
     logger.debug('Start...')
 
     try:
-        sms_fowarding_task = SMSForwardingTask()
+        sms_fowarding_task = SMSForwardingTask(log_level=log_level)
 
         thread1 = threading.Thread(target=sms_fowarding_task.start)
         thread2 = threading.Thread(target=command_task)
