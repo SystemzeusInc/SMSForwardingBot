@@ -125,10 +125,8 @@ class SMSForwardingTask():
         # 除外する電話番号取得
         exclusion_number_list = util.get_exclusion_list()
 
-        sms_template = '''<<<From {{from_number}}
-{{timestamp}}
-{{message}}'''
-        template = jinja2.Template(sms_template)
+        with open('../template/slack_message_template.txt', 'r') as f:
+            template = jinja2.Template(f.read())
 
         for sms in sms_list:
             if sms['from_number'] in exclusion_number_list:

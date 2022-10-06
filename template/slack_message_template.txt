@@ -1,0 +1,3 @@
+<<<From {{from_number}}
+{{timestamp}}
+>>>{{message}} {#>>>: 引用#}
