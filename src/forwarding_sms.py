@@ -2,8 +2,8 @@ import sys
 import time
 import configparser
 import json
+import datetime
 import pprint  # noqa
-import re
 from typing import List
 import logging
 
@@ -158,9 +158,6 @@ class SMSForwardingTask():
             template = jinja2.Template(f.read())
 
         for sms in sms_list:
-            if sms['from_number'] in exclusion_number_list:
-                self._logger.debug('exclude sms message from {}'.format(sms['from_number']))
-                continue
             render_sms = template.render(from_number=sms['from_number'],
                                          message=sms['message'],
                                          timestamp=sms['timestamp'])
@@ -168,6 +165,15 @@ class SMSForwardingTask():
             # # Slackでカラーコードが表示されるのを防止 # FIXME: 暫定
             # render_sms = re.sub(r'#([0-9]{6})', r'# \1', render_sms)
             self._logger.debug(render_sms)
+
+            # 受信したSMSを保存
+            save_filename = '../data/receive_sms_{}.txt'.format(datetime.date.today().strftime('%Y%m%d'))
+            with open(save_filename, 'a') as f:
+                f.write(render_sms + '\n')
+
+            if sms['from_number'] in exclusion_number_list:
+                self._logger.debug('exclude sms message from {}'.format(sms['from_number']))
+                continue
 
             # Slackに送信
             self.client.chat_postMessage(channel=self.slack_channel, text=render_sms)
