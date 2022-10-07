@@ -37,7 +37,7 @@ app = App(token=BOT_TOKEN)
 
 
 @app.command('/add_exclusion')
-def add_exclusion_list_command(ack, say, command):
+def add_exclusion_list_command(ack, say, command, logger):
     number = command['text']
 
     util.add_exclusion_list(number)
@@ -48,7 +48,7 @@ def add_exclusion_list_command(ack, say, command):
 
 
 @app.command('/delete_exclusion')
-def delete_exclusion_list_command(ack, say, command):
+def delete_exclusion_list_command(ack, say, command, logger):
     number = command['text']
 
     message = ''
@@ -64,7 +64,7 @@ def delete_exclusion_list_command(ack, say, command):
 
 
 @app.command('/get_exclusion')
-def get_exclusion_list_command(ack, say, command):
+def get_exclusion_list_command(ack, say, command, logger):
     data = util.get_exclusion_list()
     message = '除外リスト: ' + str(data)
     logger.debug(message)
@@ -72,7 +72,7 @@ def get_exclusion_list_command(ack, say, command):
 
 
 @app.command('/get_bot_info')
-def get_bot_info(ack, say, command):
+def get_bot_info(ack, say, command, logger):
     raspi_info = util.get_raspberry_pi_info()
 
     message = f'''{PROG}  ver {__version__}

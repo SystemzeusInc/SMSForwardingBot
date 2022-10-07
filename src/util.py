@@ -1,6 +1,7 @@
 import sys
 import subprocess
 import logging
+from typing import List
 
 LOGGING_FMT = '[%(asctime)s.%(msecs)-3d][%(levelname)8s] %(message)s'
 LOGGING_DATE_FMT = '%Y/%m/%d %H:%M:%S'
@@ -15,7 +16,12 @@ logger.addHandler(handler)
 logger.propagate = False  # 親ロガーに伝搬しない
 
 
-def get_raspberry_pi_info():
+def get_raspberry_pi_info() -> dict:
+    """Get Raspberry Pi info
+
+    Returns:
+        dict: Raspberry Pi info
+    """
     info = {}
     cmd = ['vcgencmd', 'measure_temp']
     p = subprocess.run(cmd, encoding='utf-8',
@@ -31,7 +37,12 @@ def get_raspberry_pi_info():
     return info
 
 
-def get_exclusion_list() -> list:
+def get_exclusion_list() -> List[str]:
+    """Get exclusion list
+
+    Returns:
+        List[str]: Exclusion list
+    """
     with open('../config/exclude_number.txt', 'r') as f:
         data = f.read()
     data = data.strip().split('\n')
@@ -40,11 +51,24 @@ def get_exclusion_list() -> list:
 
 
 def add_exclusion_list(number: str) -> None:
+    """Add exclusion list
+
+    Args:
+        number (str): Number to be excluded
+    """
     with open('../config/exclude_number.txt', 'a') as f:
         f.write(str(number) + '\n')
 
 
 def delete_exclusion_list(number: str) -> bool:
+    """Delete exclusion list
+
+    Args:
+        number (str): Number to be removed from exclusion list
+
+    Returns:
+        bool: False if number does not exist in exclusion list
+    """
     data = get_exclusion_list()
     new_data = [d for d in data if d != number]
 

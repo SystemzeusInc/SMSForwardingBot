@@ -3,6 +3,7 @@ import time
 import configparser
 import json
 import pprint  # noqa
+from typing import List
 import logging
 
 import schedule
@@ -18,8 +19,11 @@ class SMSForwardingTask():
     LOGGING_FMT = '[%(asctime)s.%(msecs)-3d][%(levelname)8s] %(message)s'
     LOGGING_DATE_FMT = '%Y/%m/%d %H:%M:%S'
 
-    def __init__(self, log_level=logging.INFO):
-        """
+    def __init__(self, log_level: int = logging.INFO) -> None:
+        """Initialize
+
+        Args:
+            log_level (int, optional): Level of logging. Defaults to logging.INFO.
         """
         self._logger = logging.getLogger(__name__)
         handler = logging.StreamHandler(sys.stdout)
@@ -41,11 +45,16 @@ class SMSForwardingTask():
         self.slack_channel = config['setting']['slack_channel']
         self.interval_seconds = int(config['setting']['polling_seconds'])
 
-    def enable_logger(self, level: int) -> None:
+    def __del__(self,):
+        """
+        """
+        pass
+
+    def enable_logger(self, level: int = logging.INFO) -> None:
         """Enable logger. Set level.
 
         Args:
-            level (int): Level of Logging
+            level (int): Level of logging. Defaults to logging.INFO.
         """
         self._logger.setLevel(level)
 
@@ -54,12 +63,20 @@ class SMSForwardingTask():
         """
         self._logger.setLevel(logging.NOTSET)
 
-    def decode_pdu_message(self, msg: str) -> list:  # ATコマンドで取得したPDUをデコード
-        # +CMGL: <index>,<stat>,[<alpha>],<length><CR><LF><pdu><CR><LF>
+    def decode_pdu_message(self, msg: str) -> List[PDU]:
+        """Decode PDU message
+        ATコマンドで取得したPDUをデコード
 
-        # http://www.gsm-modem.de/sms-pdu-mode.html
-        # https://www.soumu.go.jp/main_content/000739753.pdf
+        [参]
+        - http://www.gsm-modem.de/sms-pdu-mode.html
+        - https://www.soumu.go.jp/main_content/000739753.pdf
 
+        Args:
+            msg (str): PDU message. ex) +CMGL: <index>,<stat>,[<alpha>],<length><CR><LF><pdu><CR><LF>
+
+        Returns:
+            List[PDU]: Decoded PDU list
+        """
         msg_list = msg.split('\n')
 
         cmgl_flag = False
@@ -85,7 +102,15 @@ class SMSForwardingTask():
 
         return pi_list
 
-    def create_sms_list_from_pdu(self, pdu_list: list) -> list:  # PDUからSMSのリストを作成
+    def create_sms_list_from_pdu_list(self, pdu_list: List[PDU]) -> list[dict]:
+        """Create SMS list from PDU list
+
+        Args:
+            pdu_list (List[PDU]): PDU list
+
+        Returns:
+            list[dict]: SMS list
+        """
         sms_list = []
 
         mms_list = list(filter(lambda x: x.pdu['tp_ud']['udh'] is not None, pdu_list))
@@ -111,7 +136,10 @@ class SMSForwardingTask():
 
         return sms_list
 
-    def send_sms_to_slack(self,) -> None:  # SMSをATコマンドで取得からSlackに送信までの一連の動作
+    def send_sms_to_slack(self,) -> None:
+        """Send SMS to Slack
+        SMSをATコマンドで取得からSlackに送信までの一連の動作
+        """
         # SMS(PDU)取得
         at = AT(port=self.port)
         msg = at.get_sms_pdu(state=0)
@@ -120,7 +148,7 @@ class SMSForwardingTask():
         pdu_list = self.decode_pdu_message(msg)
 
         # SMSリスト作成
-        sms_list = self.create_sms_list_from_pdu(pdu_list)
+        sms_list = self.create_sms_list_from_pdu_list(pdu_list)
 
         # 除外する電話番号取得
         exclusion_number_list = util.get_exclusion_list()
@@ -140,7 +168,9 @@ class SMSForwardingTask():
             # Slackに送信
             self.client.chat_postMessage(channel=self.slack_channel, text=render_sms)
 
-    def start(self,):
+    def start(self,) -> None:
+        """Start SMS Forwarding Task
+        """
         schedule.every(self.interval_seconds).seconds.do(self.send_sms_to_slack)
 
         while True:

@@ -6,12 +6,17 @@ import serial
 
 
 class AT():
-    # https://www.diafaan.com/sms-tutorials/gsm-modem-tutorial/at-cmgl-pdu-mode/
     LOGGING_FMT = '[%(asctime)s.%(msecs)-3d][%(levelname)8s] %(message)s'
     LOGGING_DATE_FMT = '%Y/%m/%d %H:%M:%S'
 
-    def __init__(self, port, timeout=3, log_level=logging.INFO):
-        """
+    def __init__(self, port: str, baudrate: int = 460800, timeout: int = 3, log_level: int = logging.INFO) -> None:
+        """Initialize
+
+        Args:
+            port (str): Serial port
+            baudrate (int, optional): Baudrate. Defaults to 460800.
+            timeout (int, optional): pyserial timeout. Defaults to 3.
+            log_level (int, optional): Level of logging. Defaults to logging.INFO.
         """
         self._logger = logging.getLogger(__name__)
         handler = logging.StreamHandler(sys.stdout)
@@ -22,7 +27,7 @@ class AT():
         self.enable_logger(log_level)
 
         self.serial = serial.Serial(port,
-                                    460800,
+                                    baudrate,
                                     timeout=timeout)
 
         self.send_cmd('ATE0')
@@ -30,15 +35,15 @@ class AT():
         self._logger.debug(resp)
 
     def __del__(self,):
-        """
+        """Deinitialize
         """
         self.serial.close()
 
-    def enable_logger(self, level: int) -> None:
+    def enable_logger(self, level: int = logging.INFO) -> None:
         """Enable logger. Set level.
 
         Args:
-            level (int): Level of Logging
+            level (int): Level of logging. Defaults to logging.INFO
         """
         self._logger.setLevel(level)
 
@@ -48,10 +53,10 @@ class AT():
         self._logger.setLevel(logging.NOTSET)
 
     def read_response(self,) -> str:
-        """Read response
+        """Read  AT response
 
         Returns:
-            str: Response
+            str: AT Response
         """
         response = ''
         while True:
@@ -87,6 +92,9 @@ class AT():
 
     def get_sms_pdu(self, state: int = 0) -> str:
         """Get SMS PDU
+
+        [参]
+        - https://www.diafaan.com/sms-tutorials/gsm-modem-tutorial/at-cmgl-pdu-mode/
 
         Args:
             state (int, optional): {0(unread) | 1(read) | 4(all)}. Defaults to 0.
