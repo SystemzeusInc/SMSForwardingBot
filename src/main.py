@@ -76,6 +76,8 @@ def get_bot_info(ack, say, command, logger):
     raspi_info = util.get_raspberry_pi_info()
 
     message = f'''{PROG}  ver {__version__}
+
+CPU: {raspi_info['cpu']}, Mem: {raspi_info['mem']}
 Temp: {raspi_info['temp']}, Volt: {raspi_info['volt']}'''
     logger.debug(message)
     ack(message)

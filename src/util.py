@@ -1,5 +1,6 @@
 import sys
 import subprocess
+import psutil
 import logging
 from typing import List
 
@@ -23,6 +24,14 @@ def get_raspberry_pi_info() -> dict:
         dict: Raspberry Pi info
     """
     info = {}
+
+    cpu_percent = psutil.cpu_percent()
+    mem = psutil.virtual_memory()
+    mem_percent = mem.used / mem.total * 100
+
+    info['cpu'] = f'{cpu_percent}%'
+    info['mem'] = f'{mem_percent:.1f}%'
+
     cmd = ['vcgencmd', 'measure_temp']
     p = subprocess.run(cmd, encoding='utf-8',
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)

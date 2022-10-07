@@ -1,4 +1,5 @@
 pyserial==3.5b0
+psutil==5.8.0
 schedule==1.1.0
 slack-sdk==3.18.3
 slack-bolt==1.15.0
