@@ -78,7 +78,7 @@ def get_bot_info(ack, say, command, logger):
 
     message = f'''{PROG}  ver {__version__}
 
-CPU: {raspi_info['cpu']}, Mem: {raspi_info['mem']}
+CPU: {raspi_info['cpu']}, Mem: {raspi_info['mem']}, Dsk: {raspi_info['dsk']}
 Temp: {raspi_info['temp']}, Volt: {raspi_info['volt']}'''
     logger.debug(message)
     ack(message)
