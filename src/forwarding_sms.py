@@ -165,8 +165,8 @@ class SMSForwardingTask():
                                          message=sms['message'],
                                          timestamp=sms['timestamp'])
 
-            # Slackでカラーコードが表示されるのを防止 # FIXME: 暫定
-            render_sms = re.sub(r'#([0-9]{6})', r'# \1', render_sms)
+            # # Slackでカラーコードが表示されるのを防止 # FIXME: 暫定
+            # render_sms = re.sub(r'#([0-9]{6})', r'# \1', render_sms)
             self._logger.debug(render_sms)
 
             # Slackに送信

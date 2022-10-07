@@ -1,3 +1,4 @@
+import os
 import sys
 import pprint  # noqa
 import logging
@@ -94,6 +95,11 @@ def main():
     logger.debug('Start...')
 
     try:
+        if not os.path.isfile('../config/exclude_number.txt'):
+            logger.info('make ../config/exclude_number.txt')
+            with open('../config/exclude_number.txt', 'w') as f:
+                f.write('')
+
         sms_fowarding_task = SMSForwardingTask(log_level=log_level)
 
         thread1 = threading.Thread(target=sms_fowarding_task.start)
