@@ -31,7 +31,110 @@ Slack<br>
 ## インストール方法
 
 ```bash
-$ pip install -r requirements.txt
+$ cd ~/
+$ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
+```
+
+## セットアップ方法
+
+### Slack App
+
+1. Slack App作成  
+    "Your Apps" > "Create New App" > "From scratch"  
+    https://api.slack.com/apps?new_app=1
+
+1. App-Level Tokensを追加  
+    "Basic Information" > "App-Level Tokens" > "Generate Token and Scopes"で"**connections:write**", "**authorizations:read**"を追加
+
+1. Socket Modeを有効化  
+    "Socket Mode" > "Enable Socket Mode" ✅  
+
+1. Slach Commandsを追加  
+    "**/add_exclusion**", "**/delete_exclusion**", "**/get_exclusion**", "**/get_bot_info**"を追加  
+
+1. Scopes追加  
+    "OAuth & Permissions" > "Scopes"に"**app_mentions:read**", "**channels:history**", "**chat:write**", "**chat:write.customize**", "**commands**", "**group:history**"を追加
+
+1. ワークスペースに再インストール  
+    "OAuth & Permissions" > "OAuth Tokens for Your Workspace"の"Reinstall to Workspace"を押下
+
+### Slack
+
+1. 目的のチャンネルにアプリを参加させる  
+    チャンネルを左クリックし、"チャンネル詳細を表示する" > "インテグレーション" > "アプリを追加する"を選択し、先ほど作成したアプリを選択  
+
+### Raspberry Pi
+
+1. ライブラリをインストール  
+    ```bash
+    $ pip install -r requirements.txt
+    ```
+
+1. Slack AppでBot,Appトークンを確認  
+    Botトークン: "OAuth & Permissions" > "OAuth Tokens for Your Workspace" > "Bot User OAuth Token"  
+    Appトークン: "Basic Information" > "App-Level Tokens" > "sms_forwarding_bot" > "Token"
+
+    ./token.json
+    ```json
+    {
+    "bot_token": "xoxb-***",
+    "app_token": "xapp-***"
+    }
+    ```
+
+1. configの設定  
+    config/config.iniのslack_channelを目的のチャンネルに設定  
+    
+    config/config.ini
+    ```ini
+    [setting]
+    slack_channel = #sms_auth
+    ```
+
+#### 自動起動の設定を行う場合
+
+```bash
+$ sudo pip install -r requirements.txt
+```
+
+/etc/udev/rules.d/30-soracom.rules
+```text
+# AK-020
+ACTION=="add", ATTRS{idVendor}=="15eb", ATTRS{idProduct}=="a403", RUN+="/usr/sbin/usb_modeswitch --std-eject --default-vendor 0x15eb --default-product 0xa403 --target-vendor 0x15eb --target-product 0x7d0e"
+ACTION=="add", ATTRS{idvendor}=="15eb", ATTRS{idProduct}=="7d0e", RUN+="/sbin/modprobe usbserial vendor=0x15eb product=0x7d0e" 
+
+KERNEL=="ttyUSB*", ATTRS{../idVendor}=="15eb", ATTRS{../idProduct}=="7d0e", ATTRS{bNumEndpoints}=="03", ATTRS{bInterfaceNumber}=="02", SYMLINK+="modem", ENV{SYSTEMD_WANTS}="ifup@wwan0.service"
+```
+
+/opt/sms_forwarding_bot.sh 
+```bash
+#!/bin/bash
+
+sudo modprobe usbserial vendor=0x15eb product=0x7d0e # 暫定処置
+
+sleep 1
+cd /home/pi/SMSForwardingBot/src/
+python3 main.py
+```
+
+/etc/systemd/system/sms_forwarding_bot.service
+```text
+[Unit]
+Description = SMS Forwarding Bot
+
+[Service]
+ExecStart = /opt/sms_forwarding_bot.sh
+Restart = always
+Type = simple
+
+[Install]
+WantedBy = multi-user.target
+```
+
+サービス起動
+```bash
+$ sudo systemctl enable sms_forwarding_bot
+$ sudo systemctl start sms_forwarding_bot
 ```
 
 ## 使用方法
