@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 import configparser
@@ -103,14 +104,14 @@ class SMSForwardingTask():
 
         return pi_list
 
-    def create_sms_list_from_pdu_list(self, pdu_list: List[PDU]) -> list[dict]:
+    def create_sms_list_from_pdu_list(self, pdu_list: List[PDU]) -> List[dict]:
         """Create SMS list from PDU list
 
         Args:
             pdu_list (List[PDU]): PDU list
 
         Returns:
-            list[dict]: SMS list
+            List[dict]: SMS list
         """
         sms_list = []
 
@@ -144,6 +145,7 @@ class SMSForwardingTask():
         # SMS(PDU)取得
         at = AT(port=self.port)
         msg = at.get_sms_pdu(state=0)
+        self._logger.debug(msg)
 
         # PDUパース
         pdu_list = self.decode_pdu_message(msg)
@@ -168,6 +170,8 @@ class SMSForwardingTask():
 
             # 受信したSMSを保存
             save_filename = '../data/receive_sms_{}.txt'.format(datetime.date.today().strftime('%Y%m%d'))
+            if not os.path.exists('../data'):
+                os.mkdir('../data')
             with open(save_filename, 'a') as f:
                 f.write(render_sms + '\n')
 
@@ -193,4 +197,5 @@ if __name__ == "__main__":
     """
     sms_forwarding_task = SMSForwardingTask()
     sms_forwarding_task.enable_logger(logging.DEBUG)
-    sms_forwarding_task.send_sms_to_slack()
+    # sms_forwarding_task.send_sms_to_slack()
+    sms_forwarding_task.start()
