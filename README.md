@@ -6,7 +6,7 @@ SMS認証が必要なクラウドにログインするときなどにSlackに認
 
 bot<br>
 ```bash
-$ python main.py --log-level debug
+$ python3 main.py --log-level debug
 [2022/10/07 15:01:49.343][   DEBUG] Start...
 ⚡️ Bolt app is running!
 [2022/10/07 15:02:20.26 ][   DEBUG] <<<From 08053177709
@@ -77,8 +77,8 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
     ./token.json
     ```json
     {
-    "bot_token": "xoxb-***",
-    "app_token": "xapp-***"
+      "bot_token": "xoxb-***",
+      "app_token": "xapp-***"
     }
     ```
 
@@ -95,6 +95,8 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
 
 ```bash
 $ sudo pip install -r requirements.txt
+$ sudo apt update
+$ sudo apt install screen wvdial usb-modeswitch
 ```
 
 /etc/udev/rules.d/30-soracom.rules
@@ -106,19 +108,42 @@ ACTION=="add", ATTRS{idvendor}=="15eb", ATTRS{idProduct}=="7d0e", RUN+="/sbin/mo
 KERNEL=="ttyUSB*", ATTRS{../idVendor}=="15eb", ATTRS{../idProduct}=="7d0e", ATTRS{bNumEndpoints}=="03", ATTRS{bInterfaceNumber}=="02", SYMLINK+="modem", ENV{SYSTEMD_WANTS}="ifup@wwan0.service"
 ```
 
+/etc/wvdial.conf ※docomoの場合  
+```conf
+[Dialer Defaults]
+Init1 = AT+CFUN=1
+Init2 = ATZ
+Init3 = AT+CGDCONT=1,"IP","spmode.ne.jp"
+Dial Attempts = 0
+Stupid Mode = 1
+Modem Type = Analog Modem
+Dial Command = ATD
+Stupid Mode = yes
+Baud = 460800
+New PPPD = yes
+ISDN = 0
+APN = spmode.ne.jp
+Phone = *99***1#
+Username = spmode
+Password = spmode
+Carrier Check = no
+Auto DNS = 1
+Check Def Route = 1
+```
+
 /opt/sms_forwarding_bot.sh 
 ```bash
 #!/bin/bash
 
 sudo modprobe usbserial vendor=0x15eb product=0x7d0e # 暫定処置
 
-sleep 1
+sleep 10
 cd /home/pi/SMSForwardingBot/src/
 python3 main.py
 ```
 
 /etc/systemd/system/sms_forwarding_bot.service
-```text
+```conf
 [Unit]
 Description = SMS Forwarding Bot
 
@@ -142,7 +167,7 @@ $ sudo systemctl start sms_forwarding_bot
 - ボット
       
     ```bash
-    $ python main.py -h
+    $ python3 main.py -h
     usage: main.py [-h] [--log-level {debug,info,warn,error,critical}] [--version]
 
     optional arguments:
@@ -181,6 +206,7 @@ $ sudo systemctl start sms_forwarding_bot
 
 ```text
 ./
+├ data/                    : 受信したSMSメッセージ
 ├ config/                  
 │     ├ config.ini         : 設定ファイル
 │     └ exclude_number.txt : 除外リスト
