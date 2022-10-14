@@ -94,7 +94,7 @@ class AT():
         """Get SMS PDU
 
         [参]
-        - https://www.diafaan.com/sms-tutorials/gsm-modem-tutorial/at-cmgl-pdu-mode/
+        - [4.1 List Messages +CMGL] https://www.arib.or.jp/english/html/overview/doc/STD-T63v9_10/5_Appendix/Rel10/27/27005-a00.pdf
 
         Args:
             state (int, optional): {0(unread) | 1(read) | 4(all)}. Defaults to 0.
@@ -112,6 +112,33 @@ class AT():
         resp = self.read_response()
         self._logger.debug(resp)
 
+        return resp
+
+    def delete_message(self, index: int = None, delflag: int = 1):
+        """Delete message from message storage
+
+        [参]
+        - [3.5.4 Delete MEssage +CMGD] https://www.arib.or.jp/english/html/overview/doc/STD-T63v9_10/5_Appendix/Rel10/27/27005-a00.pdf
+
+        Args:
+            index (int, optional): index. Defaults to None.
+            delflag (int, optional): {0 | 1 | 2 | 3 | 4}. Defaults to 1.
+        """
+        if index is None:
+            index = 1
+        self.send_cmd(f'AT+CMGD={index},{delflag}')
+        resp = self.read_response()
+        self._logger.debug(resp)
+
+    def check_message_storage(self,):
+        """Check message storage
+
+        [参]
+        - [3.2.2 Preferred Message Storage +CPMS] https://www.arib.or.jp/english/html/overview/doc/STD-T63v9_10/5_Appendix/Rel10/27/27005-a00.pdf
+        """
+        self.send_cmd('AT+CPMS="SM"')
+        resp = self.read_response()
+        self._logger.debug(resp)
         return resp
 
     def send_cmd(self, cmd: str) -> None:

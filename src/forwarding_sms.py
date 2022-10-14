@@ -182,6 +182,11 @@ class SMSForwardingTask():
             # Slackに送信
             self.client.chat_postMessage(channel=self.slack_channel, text=render_sms)
 
+        # メッセージストレージからメッセージを削除
+        self._logger.debug(at.check_message_storage())
+        at.delete_message()
+        self._logger.debug(at.check_message_storage())
+
     def start(self,) -> None:
         """Start SMS Forwarding Task
         """
