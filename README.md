@@ -217,3 +217,7 @@ $ sudo systemctl start sms_forwarding_bot
       ├ sms_pdu.py         : PDUパース
       └ main.py            : メインスクリプト
 ```
+
+## License
+
+This projects is licensed under the MIT License, see the LICENSE.txt file for details
