@@ -13,7 +13,7 @@ from forwarding_sms import SMSForwardingTask
 import util
 
 PROG = 'SMS Forwarding Bot'
-__version__ = '0.1.0'
+__version__ = '1.0.0'
 
 
 # トークン
