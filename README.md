@@ -11,8 +11,8 @@ $ python3 main.py --log-level debug
 ⚡️ Bolt app is running!
 [2022/10/07 15:02:20.26 ][   DEBUG] <<<From 08053177709
 2022-10-07 15:01:58
->>>Apple IDコードは次の通りです：737753。コードを共有しないでください。
-@apple.com # 737753 %apple.com 
+>>>*** IDコードは次の通りです：737753。コードを共有しないでください。
+@***.com # 737753 %***.com 
 ```
 
 Slack<br>
@@ -58,13 +58,14 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
 1. ワークスペースに再インストール  
     "OAuth & Permissions" > "OAuth Tokens for Your Workspace"の"Reinstall to Workspace"を押下
 
-### Slack
+### Slackチャンネル
 
 1. 目的のチャンネルにアプリを参加させる  
     チャンネルを左クリックし、"チャンネル詳細を表示する" > "インテグレーション" > "アプリを追加する"を選択し、先ほど作成したアプリを選択  
 
 ### Raspberry Pi
 
+#### ボットの設定
 1. ライブラリをインストール  
     ```bash
     $ pip install -r requirements.txt
@@ -93,76 +94,102 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
     slack_channel = #sms_auth
     ```
 
+#### USBモデムの設定
+
+この設定でUSBドングル(モデム)がインターネットに接続できるようになる。
+
+ 1. ライブラリをインストール
+
+    ```bash
+    $ sudo apt update
+    $ sudo apt install screen wvdial usb-modeswitch
+    ```
+
+1. デバイス(USB)のルールファイルを作成
+   
+    以下のファイルを作成
+    /etc/udev/rules.d/30-soracom.rules
+    ```text
+    # AK-020
+    ACTION=="add", ATTRS{idVendor}=="15eb", ATTRS{idProduct}=="a403", RUN+="/usr/sbin/usb_modeswitch --std-eject --default-vendor 0x15eb --default-product 0xa403 --target-vendor 0x15eb --target-product 0x7d0e"
+    ACTION=="add", ATTRS{idvendor}=="15eb", ATTRS{idProduct}=="7d0e", RUN+="/sbin/modprobe usbserial vendor=0x15eb product=0x7d0e" 
+
+    KERNEL=="ttyUSB*", ATTRS{../idVendor}=="15eb", ATTRS{../idProduct}=="7d0e", ATTRS{bNumEndpoints}=="03", ATTRS{bInterfaceNumber}=="02", SYMLINK+="modem", ENV{SYSTEMD_WANTS}="ifup@wwan0.service"
+    ```
+
+1. wvdialの設定
+
+    以下のファイルを作成
+    /etc/wvdial.conf ※docomoの場合  
+    ```conf
+    [Dialer Defaults]
+    Init1 = AT+CFUN=1
+    Init2 = ATZ
+    Init3 = AT+CGDCONT=1,"IP","spmode.ne.jp"
+    Dial Attempts = 0
+    Stupid Mode = 1
+    Modem Type = Analog Modem
+    Dial Command = ATD
+    Stupid Mode = yes
+    Baud = 460800
+    New PPPD = yes
+    ISDN = 0
+    APN = spmode.ne.jp
+    Phone = *99***1#
+    Username = spmode
+    Password = spmode
+    Carrier Check = no
+    Auto DNS = 1
+    Check Def Route = 1
+    ```
+
+    ※docomo以外の場合はAPN,Username,Passwordを使用するキャリアのものにしてください
+    
+
 #### 自動起動の設定を行う場合
 
-```bash
-$ sudo pip install -r requirements.txt
-$ sudo apt update
-$ sudo apt install screen wvdial usb-modeswitch
-```
+この設定を行えば電源を入れるだけでこのボットが起動するようになる。
 
-/etc/udev/rules.d/30-soracom.rules
-```text
-# AK-020
-ACTION=="add", ATTRS{idVendor}=="15eb", ATTRS{idProduct}=="a403", RUN+="/usr/sbin/usb_modeswitch --std-eject --default-vendor 0x15eb --default-product 0xa403 --target-vendor 0x15eb --target-product 0x7d0e"
-ACTION=="add", ATTRS{idvendor}=="15eb", ATTRS{idProduct}=="7d0e", RUN+="/sbin/modprobe usbserial vendor=0x15eb product=0x7d0e" 
+1. python実行スクリプトを作成
 
-KERNEL=="ttyUSB*", ATTRS{../idVendor}=="15eb", ATTRS{../idProduct}=="7d0e", ATTRS{bNumEndpoints}=="03", ATTRS{bInterfaceNumber}=="02", SYMLINK+="modem", ENV{SYSTEMD_WANTS}="ifup@wwan0.service"
-```
+    以下のファイルを作成  
 
-/etc/wvdial.conf ※docomoの場合  
-```conf
-[Dialer Defaults]
-Init1 = AT+CFUN=1
-Init2 = ATZ
-Init3 = AT+CGDCONT=1,"IP","spmode.ne.jp"
-Dial Attempts = 0
-Stupid Mode = 1
-Modem Type = Analog Modem
-Dial Command = ATD
-Stupid Mode = yes
-Baud = 460800
-New PPPD = yes
-ISDN = 0
-APN = spmode.ne.jp
-Phone = *99***1#
-Username = spmode
-Password = spmode
-Carrier Check = no
-Auto DNS = 1
-Check Def Route = 1
-```
+    /opt/sms_forwarding_bot.sh 
 
-/opt/sms_forwarding_bot.sh 
-```bash
-#!/bin/bash
+    ```bash
+    #!/bin/bash
 
-sudo modprobe usbserial vendor=0x15eb product=0x7d0e # 暫定処置
+    sudo modprobe usbserial vendor=0x15eb product=0x7d0e 
 
-sleep 10
-cd /home/pi/SMSForwardingBot/src/
-python3 main.py
-```
+    sleep 10
+    cd /home/pi/SMSForwardingBot/src/
+    python3 main.py
+    ```
 
-/etc/systemd/system/sms_forwarding_bot.service
-```conf
-[Unit]
-Description = SMS Forwarding Bot
+1. スクリプトを実行するサービスを登録
+   
+    以下のファイルを作成  
 
-[Service]
-ExecStart = /opt/sms_forwarding_bot.sh
-Restart = always
-Type = simple
+    /etc/systemd/system/sms_forwarding_bot.service
+    ```conf
+    [Unit]
+    Description = SMS Forwarding Bot
 
-[Install]
-WantedBy = multi-user.target
-```
+    [Service]
+    ExecStart = /opt/sms_forwarding_bot.sh
+    Restart = always
+    Type = simple
 
-サービス起動
-```bash
-$ sudo systemctl enable sms_forwarding_bot
-$ sudo systemctl start sms_forwarding_bot
-```
+    [Install]
+    WantedBy = multi-user.target
+    ```
+
+1. サービス起動
+
+    ```bash
+    $ sudo systemctl enable sms_forwarding_bot
+    $ sudo systemctl start sms_forwarding_bot
+    ```
 
 ## 使用方法
 
