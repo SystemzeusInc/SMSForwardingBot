@@ -72,7 +72,9 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
 
 1. Slack AppでBot,Appトークンを確認  
     Botトークン: "OAuth & Permissions" > "OAuth Tokens for Your Workspace" > "Bot User OAuth Token"  
-    Appトークン: "Basic Information" > "App-Level Tokens" > "sms_forwarding_bot" > "Token"
+    Appトークン: "Basic Information" > "App-Level Tokens" > "sms_forwarding_bot" > "Token"  
+
+    取得したトークンをtoken.jsonとして以下のように保存。    
 
     ./token.json
     ```json
@@ -85,7 +87,7 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
 1. configの設定  
     config/config.iniのslack_channelを目的のチャンネルに設定  
     
-    config/config.ini
+    ./config/config.ini
     ```ini
     [setting]
     slack_channel = #sms_auth
@@ -177,6 +179,11 @@ $ sudo systemctl start sms_forwarding_bot
       --version             show program's version number and exit
     ```
 
+    例)
+    ```bash
+    $ python3 main.py --log-level debug
+    ```
+
 - Slack(スラッシュコマンド一覧)
 
     - 除外リストに追加
@@ -184,6 +191,7 @@ $ sudo systemctl start sms_forwarding_bot
         ```text
         /add_exclusion {対象の文字列} # ex) /add_exclusion NTT DOCOMO
         ```
+
     - 除外リストから削除
 
         ```text
@@ -204,6 +212,7 @@ $ sudo systemctl start sms_forwarding_bot
 
 ## NOTE
 
+ディレクトリ構成
 ```text
 ./
 ├ data/                    : 受信したSMSメッセージ
@@ -220,4 +229,4 @@ $ sudo systemctl start sms_forwarding_bot
 
 ## License
 
-This projects is licensed under the MIT License, see the LICENSE.txt file for details
+This projects is licensed under the MIT License, see the LICENSE.txt file for details.
