@@ -14,7 +14,8 @@ from slack_sdk import WebClient
 
 from at import AT
 from sms_pdu import PDU
-import util
+
+from exclusion_list import get_exclusion_list
 
 
 class SMSForwardingTask():
@@ -154,7 +155,7 @@ class SMSForwardingTask():
         sms_list = self.create_sms_list_from_pdu_list(pdu_list)
 
         # 除外する電話番号取得
-        exclusion_number_list = util.get_exclusion_list()
+        exclusion_number_list = get_exclusion_list()
 
         with open('../template/slack_message_template.txt', 'r') as f:
             template = jinja2.Template(f.read())

@@ -10,7 +10,8 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 from forwarding_sms import SMSForwardingTask
-import util
+from exclusion_list import add_exclusion_list, delete_exclusion_list, get_exclusion_list
+from util.various import get_raspberry_pi_info
 
 PROG = 'SMS Forwarding Bot'
 __version__ = '1.0.0'
@@ -41,7 +42,7 @@ app = App(token=BOT_TOKEN)
 def add_exclusion_list_command(ack, say, command, logger):
     number = command['text']
 
-    util.add_exclusion_list(number)
+    add_exclusion_list(number)
     message = f'除外リストに「{number}」を追加しました'
     logger.debug(message)
     say(message)
@@ -53,7 +54,7 @@ def delete_exclusion_list_command(ack, say, command, logger):
     number = command['text']
 
     message = ''
-    if util.delete_exclusion_list(number):
+    if delete_exclusion_list(number):
         message = f'除外リストから「{number}」を削除しました'
         logger.debug(message)
         say(message)
@@ -66,7 +67,7 @@ def delete_exclusion_list_command(ack, say, command, logger):
 
 @app.command('/get_exclusion')
 def get_exclusion_list_command(ack, say, command, logger):
-    data = util.get_exclusion_list()
+    data = get_exclusion_list()
     message = '除外リスト: ' + str(data)
     logger.debug(message)
     ack(message)
@@ -74,7 +75,7 @@ def get_exclusion_list_command(ack, say, command, logger):
 
 @app.command('/get_bot_info')
 def get_bot_info(ack, say, command, logger):
-    raspi_info = util.get_raspberry_pi_info()
+    raspi_info = get_raspberry_pi_info()
 
     message = f'''{PROG}  ver {__version__}
 
