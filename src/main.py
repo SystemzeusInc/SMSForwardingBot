@@ -11,7 +11,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 from forwarding_sms import SMSForwardingTask
 from exclusion_list import add_exclusion_list, delete_exclusion_list, get_exclusion_list
-from util.various import get_raspberry_pi_info
+from common.util import get_raspberry_pi_info
 
 PROG = 'SMS Forwarding Bot'
 __version__ = '1.0.0'
