@@ -17,6 +17,8 @@ from sms_pdu import PDU
 
 from exclusion_list import get_exclusion_list
 
+from common.log import Logger
+
 
 class SMSForwardingTask():
     LOGGING_FMT = '[%(asctime)s.%(msecs)-3d][%(levelname)8s] %(message)s'
@@ -28,13 +30,7 @@ class SMSForwardingTask():
         Args:
             log_level (int, optional): Level of logging. Defaults to logging.INFO.
         """
-        self._logger = logging.getLogger(__name__)
-        handler = logging.StreamHandler(sys.stdout)
-        fmt = logging.Formatter(fmt=self.LOGGING_FMT, datefmt=self.LOGGING_DATE_FMT)
-        handler.setFormatter(fmt)
-        self._logger.addHandler(handler)
-        self._logger.propagate = False  # 親ロガーに伝搬しない
-        self.enable_logger(log_level)
+        self._logger = Logger(name=__name__, level=log_level)
 
         config = configparser.ConfigParser()
         config.read('../config/config.ini')
@@ -52,19 +48,6 @@ class SMSForwardingTask():
         """
         """
         pass
-
-    def enable_logger(self, level: int = logging.INFO) -> None:
-        """Enable logger. Set level.
-
-        Args:
-            level (int): Level of logging. Defaults to logging.INFO.
-        """
-        self._logger.setLevel(level)
-
-    def disable_logger(self,) -> None:
-        """Disable logger
-        """
-        self._logger.setLevel(logging.NOTSET)
 
     def decode_pdu_message(self, msg: str) -> List[PDU]:
         """Decode PDU message
@@ -201,7 +184,6 @@ class SMSForwardingTask():
 if __name__ == "__main__":
     """
     """
-    sms_forwarding_task = SMSForwardingTask()
-    sms_forwarding_task.enable_logger(logging.DEBUG)
+    sms_forwarding_task = SMSForwardingTask(log_level=logging.DEBUG)
     # sms_forwarding_task.send_sms_to_slack()
     sms_forwarding_task.start()

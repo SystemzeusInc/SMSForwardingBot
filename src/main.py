@@ -13,6 +13,8 @@ from forwarding_sms import SMSForwardingTask
 from exclusion_list import add_exclusion_list, delete_exclusion_list, get_exclusion_list
 from common.util import get_raspberry_pi_info
 
+from common.log import Logger
+
 PROG = 'SMS Forwarding Bot'
 __version__ = '1.0.0'
 
@@ -23,17 +25,6 @@ with open('../token.json', 'r') as f:
 BOT_TOKEN = token['bot_token']
 APP_TOKEN = token['app_token']
 
-LOGGING_FMT = '[%(asctime)s.%(msecs)-3d][%(levelname)8s] %(message)s'
-LOGGING_DATE_FMT = '%Y/%m/%d %H:%M:%S'
-# logging.basicConfig(level=logging.INFO, format=LOGGING_FMT, datefmt=LOGGING_DATE_FMT)
-
-log_level = logging.INFO
-logger = logging.getLogger(__name__)
-handler = logging.StreamHandler(sys.stdout)
-fmt = logging.Formatter(fmt=LOGGING_FMT, datefmt=LOGGING_DATE_FMT)
-handler.setFormatter(fmt)
-logger.addHandler(handler)
-logger.propagate = False  # 親ロガーに伝搬しない
 
 app = App(token=BOT_TOKEN)
 
@@ -126,6 +117,8 @@ if __name__ == "__main__":
     parser.add_argument('--version', action='version', version=f'{__version__}')
     args = parser.parse_args()
 
+    logger = Logger(name=__name__)
+
     if args.log_level == 'debug':
         log_level = logging.DEBUG
     elif args.log_level == 'info':
@@ -136,6 +129,6 @@ if __name__ == "__main__":
         log_level = logging.ERROR
     else:
         log_level = logging.CRITICAL
-    logger.setLevel(level=log_level)
+    logger.set_level(level=log_level)
 
     main()

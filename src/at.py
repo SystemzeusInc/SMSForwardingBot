@@ -4,11 +4,10 @@ import logging
 
 import serial
 
+from common.log import Logger
+
 
 class AT():
-    LOGGING_FMT = '[%(asctime)s.%(msecs)-3d][%(levelname)8s] %(message)s'
-    LOGGING_DATE_FMT = '%Y/%m/%d %H:%M:%S'
-
     def __init__(self, port: str, baudrate: int = 460800, timeout: int = 3, log_level: int = logging.INFO) -> None:
         """Initialize
 
@@ -18,13 +17,7 @@ class AT():
             timeout (int, optional): pyserial timeout. Defaults to 3.
             log_level (int, optional): Level of logging. Defaults to logging.INFO.
         """
-        self._logger = logging.getLogger(__name__)
-        handler = logging.StreamHandler(sys.stdout)
-        fmt = logging.Formatter(fmt=self.LOGGING_FMT, datefmt=self.LOGGING_DATE_FMT)
-        handler.setFormatter(fmt)
-        self._logger.addHandler(handler)
-        self._logger.propagate = False  # 親ロガーに伝搬しない
-        self.enable_logger(log_level)
+        self._logger = Logger(name=__name__, level=log_level)
 
         self.serial = serial.Serial(port,
                                     baudrate,
@@ -38,19 +31,6 @@ class AT():
         """Deinitialize
         """
         self.serial.close()
-
-    def enable_logger(self, level: int = logging.INFO) -> None:
-        """Enable logger. Set level.
-
-        Args:
-            level (int): Level of logging. Defaults to logging.INFO
-        """
-        self._logger.setLevel(level)
-
-    def disable_logger(self,) -> None:
-        """Disable logger
-        """
-        self._logger.setLevel(logging.NOTSET)
 
     def read_response(self,) -> str:
         """Read  AT response
