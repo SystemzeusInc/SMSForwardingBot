@@ -1,6 +1,7 @@
-"""Various."""
+"""Util."""
 import subprocess
 import psutil
+
 
 def get_raspberry_pi_info() -> dict:
     """Get Raspberry Pi info.

@@ -1,4 +1,5 @@
 {
+    "files.insertFinalNewline": true,
     "editor.formatOnSave": true,
     "[python]": {
         "editor.tabSize": 4,
@@ -8,8 +9,7 @@
         "editor.rulers": [
             160
         ],
-        "editor.defaultFormatter": "ms-python.autopep8",
-        "editor.formatOnPaste": true
+        "editor.defaultFormatter": "ms-python.autopep8"
     },
     "autoDocstring.docstringFormat": "google",
     "cSpell.words": [
