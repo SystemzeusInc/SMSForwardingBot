@@ -18,15 +18,27 @@ $ python3 main.py --log-level debug
 Slack<br>
 <img src="./doc/img/demo_slack.png" width=700>
 
-## 必須ライブラリ
+## 環境
 
-- pyserial==3.5b0
-- psutil==5.8.0
-- schedule==1.1.0
-- slack-sdk==3.18.3
-- slack-bolt==1.15.0
-- gsm0338==1.0.0
-- jinja2==2.11.3
+- SW:
+    - OS: Linux raspberrypi 6.1.21-v8+ #1642 SMP PREEMPT Mon Apr  3 17:24:16 BST 2023 aarch64 GNU/Linux
+
+    - Pythonライブラリ一覧
+        - pyserial==3.5b0
+        - psutil==5.8.0
+        - schedule==1.1.0
+        - slack-sdk==3.18.3
+        - slack-bolt==1.15.0
+        - gsm0338==1.0.0
+        - jinja2==3.1.2
+  
+    - apt一覧
+        - wvdial
+        - usb-modeswitch
+  
+- HW: 
+    - Raspberry Pi 4 Model B Rev 1.2
+    - AKA-020(USBドングル)
 
 ## インストール方法
 
@@ -49,7 +61,7 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
 1. Socket Modeを有効化  
     "Socket Mode" > "Enable Socket Mode" ✅  
 
-1. Slach Commandsを追加  
+1. Slack Commandsを追加  
     "**/add_exclusion**", "**/delete_exclusion**", "**/get_exclusion**", "**/get_bot_info**"を追加  
 
 1. Scopes追加  
@@ -75,9 +87,9 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
     Botトークン: "OAuth & Permissions" > "OAuth Tokens for Your Workspace" > "Bot User OAuth Token"  
     Appトークン: "Basic Information" > "App-Level Tokens" > "sms_forwarding_bot" > "Token"  
 
-    取得したトークンをtoken.jsonとして以下のように保存。    
+    取得したトークンを _token.json_ として以下のように保存。    
 
-    ./token.json
+    _./token.json_
     ```json
     {
       "bot_token": "xoxb-***",
@@ -86,9 +98,9 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
     ```
 
 1. configの設定  
-    config/config.iniのslack_channelを目的のチャンネルに設定  
+    _config/config.ini_ のslack_channelを目的のチャンネルに設定。  
     
-    ./config/config.ini
+    _./config/config.ini_
     ```ini
     [setting]
     slack_channel = #sms_auth
@@ -108,7 +120,7 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
 1. デバイス(USB)のルールファイルを作成
    
     以下のファイルを作成
-    /etc/udev/rules.d/30-soracom.rules
+    _/etc/udev/rules.d/30-soracom.rules_
     ```text
     # AK-020
     ACTION=="add", ATTRS{idVendor}=="15eb", ATTRS{idProduct}=="a403", RUN+="/usr/sbin/usb_modeswitch --std-eject --default-vendor 0x15eb --default-product 0xa403 --target-vendor 0x15eb --target-product 0x7d0e"
@@ -120,7 +132,7 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
 1. wvdialの設定
 
     以下のファイルを作成
-    /etc/wvdial.conf ※docomoの場合  
+    _/etc/wvdial.conf_ ※docomoの場合  
     ```conf
     [Dialer Defaults]
     Init1 = AT+CFUN=1
@@ -143,7 +155,7 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
     Check Def Route = 1
     ```
 
-    ※docomo以外の場合はAPN,Username,Passwordを使用するキャリアのものにしてください
+    ※docomo以外の場合はAPN,Username,Passwordを使用するキャリアのものにしてください。
     
 
 #### 自動起動の設定を行う場合
@@ -152,10 +164,9 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
 
 1. python実行スクリプトを作成
 
-    以下のファイルを作成  
+    以下のファイルを作成。
 
-    /opt/sms_forwarding_bot.sh 
-
+    _/opt/sms_forwarding_bot.sh_
     ```bash
     #!/bin/bash
 
@@ -166,11 +177,23 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
     python3 main.py
     ```
 
+1. 実行権限を付与
+
+    ```bash
+    $ sudo chmod 744 /opt/sms_forwarding_bot.sh
+    ```
+
+1. ライブラリをインストール
+
+    ```bash
+    $ sudo pip install -r requirements.txt
+    ```
+
 1. スクリプトを実行するサービスを登録
    
-    以下のファイルを作成  
+    以下のファイルを作成。  
 
-    /etc/systemd/system/sms_forwarding_bot.service
+    _/etc/systemd/system/sms_forwarding_bot.service_
     ```conf
     [Unit]
     Description = SMS Forwarding Bot
@@ -239,21 +262,25 @@ $ git clone https://github.com/SystemzeusInc/SMSForwardingBot.git
 
 ## NOTE
 
-ディレクトリ構成
-```text
-./
-├ data/                    : 受信したSMSメッセージ
-├ config/                  
-│     ├ config.ini         : 設定ファイル
-│     └ exclude_number.txt : 除外リスト
-└ src/
-      ├ util.py            : 共通ロジック
-      ├ at.py              : ATコマンド
-      ├ forwarding_task.py : 転送ロジック
-      ├ sms_pdu.py         : PDUパース
-      └ main.py            : メインスクリプト
+ディレクトリ構成  
+```
+.
+├── data                           : 受信したSMSメッセージの保存先        
+├── config                         
+│   ├── config.ini                 : 設定ファイル
+│   └── exclude_number.txt         : 除外リスト        
+├── src                            
+│   ├── at.py                      : ATコマンド
+│   ├── forwarding_sms.py          : 転送ロジック
+│   ├── __init__.py                
+│   ├── main.py                    : メインスクリプト
+│   ├── sms_pdu.py                 : PDUパース
+│   └── util.py                    : 共通ロジック
+├── template                       
+│   └── slack_message_template.txt : Slackに送信するメッセージのテンプレート
+└── token.json                     : Slackのトークン
 ```
 
 ## License
 
-This projects is licensed under the MIT License, see the LICENSE.txt file for details.
+This projects is licensed under the MIT License, see the [LICENSE.txt](/LICENSE.txt) file for details.
