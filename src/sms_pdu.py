@@ -7,6 +7,8 @@ import logging
 
 import gsm0338  # noqa
 
+from common.log import Logger
+
 
 class PDU():
     LOGGING_FMT = '[%(asctime)s.%(msecs)-3d][%(levelname)8s] %(message)s'
@@ -15,13 +17,7 @@ class PDU():
     def __init__(self, line=None, log_level=logging.INFO):
         """
         """
-        self._logger = logging.getLogger(__name__)
-        handler = logging.StreamHandler(sys.stdout)
-        fmt = logging.Formatter(fmt=self.LOGGING_FMT, datefmt=self.LOGGING_DATE_FMT)
-        handler.setFormatter(fmt)
-        self._logger.addHandler(handler)
-        self._logger.propagate = False  # 親ロガーに伝搬しない
-        self.enable_logger(log_level)
+        self._logger = Logger(name=__name__, level=log_level)
 
         self.pdu = {}
 
@@ -32,19 +28,6 @@ class PDU():
         """
         """
         pass
-
-    def enable_logger(self, level: int) -> None:
-        """Enable logger. Set level.
-
-        Args:
-            level (int): Level of Logging
-        """
-        self._logger.setLevel(level)
-
-    def disable_logger(self,) -> None:
-        """Disable logger
-        """
-        self._logger.setLevel(logging.NOTSET)
 
     @property
     def timestamp(self,) -> str:
@@ -123,11 +106,12 @@ class PDU():
         return out
 
     def parse_pdu(self, line: str):
-        # tp_pid
-        # tp_dsc
-        # tp_scts  (bytearray)
-        # tp_udl   (int)
-        # tp_ud    (dict)
+        # www.gsm-modem.de/sms-pdu-mode.html
+        # tp_pid                tp-protocol-identifier
+        # tp_dcs                tp-data-coding-scheme
+        # tp_scts  (bytearray)  tp-service-center-time-stamp
+        # tp_udl   (int)        tp-user-data-length
+        # tp_ud    (dict)       tp-user-data
         #     udhl (int)
         #     udh  (list)
         #     ud   (bytearray)
@@ -139,12 +123,12 @@ class PDU():
         self.pdu['smsc_length'] = d.read(1)[0]
         if self.pdu['smsc_length'] > 0:
             self.pdu['type_of_address'] = d.read(1)[0]
-            self.pdu['service_center_number'] = d.read(self.pdu['smsc_length']-1)  # NOTE: semioctet, With an "f" at the end.
+            self.pdu['service_center_number'] = d.read(self.pdu['smsc_length'] - 1)  # NOTE: semioctet, With an "f" at the end.
 
         self.pdu['sms_type'] = d.read(1)[0]
         self.pdu['address_length'] = d.read(1)[0]
         self.pdu['type_of_address'] = self.parse_type_of_number(d.read(1)[0])
-        self.pdu['sender_number'] = d.read(int((self.pdu['address_length']+1)/2))  # NOTE: semioctet, With an "f" at the end.
+        self.pdu['sender_number'] = d.read(int((self.pdu['address_length'] + 1) / 2))  # NOTE: semioctet, With an "f" at the end.
 
         # TP: Transport Protocol
         self.pdu['tp_pid'] = d.read(1)[0]  # Protocol identifier
