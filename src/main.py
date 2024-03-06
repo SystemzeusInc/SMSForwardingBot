@@ -16,7 +16,7 @@ from common.util import get_raspberry_pi_info
 from common.log import Logger
 
 PROG = 'SMS Forwarding Bot'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 
 # トークン
